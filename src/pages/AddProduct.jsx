@@ -1,4 +1,3 @@
-// AddProduct.jsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -14,16 +13,24 @@ const AddProduct = () => {
   const [preview, setPreview] = useState("");
   const [products, setProducts] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [total, setTotal] = useState(0);
   const navigate = useNavigate();
 
   const fetchProducts = async () => {
-    const res = await axios.get("http://localhost:5000/api/products");
-    setProducts(res.data);
+    try {
+      const res = await axios.get(`https://localhost:7085/api/Products?page=${page}&limit=${limit}`);
+      setProducts(res.data.data);         // ✅ Correctly access paginated array
+      setTotal(res.data.total);
+    } catch (err) {
+      console.error("Error fetching products:", err.message);
+    }
   };
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [page]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -44,12 +51,12 @@ const AddProduct = () => {
     formData.append("image", imageFile);
 
     try {
-      await axios.post("http://localhost:5000/api/products", formData, {
+      await axios.post("https://localhost:7085/api/Products", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-      alert("Product added successfully!");
+      alert(`✅ Product "${name}" added successfully!`);
       fetchProducts();
       setName("");
       setDesc("");
@@ -58,15 +65,20 @@ const AddProduct = () => {
       setPreview("");
       setShowForm(false);
     } catch (err) {
-      alert("Failed to add product");
-      console.error(err);
+      alert("❌ Failed to add product");
+      console.error("Upload error:", err.response?.data || err.message);
     }
   };
 
   const deleteProduct = async (id) => {
     if (!window.confirm("Delete this product?")) return;
-    await axios.delete(`http://localhost:5000/api/products/${id}`);
-    fetchProducts();
+    try {
+      await axios.delete(`https://localhost:7085/api/Products/${id}`);
+      fetchProducts();
+    } catch (err) {
+      alert("Failed to delete product");
+      console.error(err);
+    }
   };
 
   return (
@@ -145,7 +157,7 @@ const AddProduct = () => {
       )}
 
       <div className="product-table-section mt-5">
-        <h4>All Products</h4>
+        <h4>All Products (Page {page} of {Math.ceil(total / limit)})</h4>
         <div className="table-wrapper">
           <table className="product-table">
             <thead>
@@ -158,25 +170,44 @@ const AddProduct = () => {
               </tr>
             </thead>
             <tbody>
-              {products.map((p, i) => (
-                <tr key={p._id}>
-                  <td>{i + 1}</td>
+              {Array.isArray(products) && products.map((p, i) => (
+                <tr key={p.id}>
+                  <td>{(page - 1) * limit + i + 1}</td>
                   <td>{p.name}</td>
                   <td>Rs. {p.price}</td>
                   <td>
                     <img
-                      src={p.image?.startsWith("/uploads") ? `http://localhost:5000${p.image}` : p.image}
+                      src={p.image?.startsWith("/uploads") ? `https://localhost:7085${p.image}` : p.image}
                       className="product-thumb"
                       alt=""
                     />
                   </td>
                   <td>
-                    <button className="btn btn-danger btn-sm" onClick={() => deleteProduct(p._id)}>🗑 Delete</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => deleteProduct(p.id)}>
+                      🗑 Delete
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          <div className="pagination-controls mt-3 d-flex justify-content-between">
+            <button
+              className="btn btn-outline-secondary"
+              disabled={page === 1}
+              onClick={() => setPage(page - 1)}
+            >
+              ◀ Prev
+            </button>
+            <button
+              className="btn btn-outline-secondary"
+              disabled={page * limit >= total}
+              onClick={() => setPage(page + 1)}
+            >
+              Next ▶
+            </button>
+          </div>
         </div>
       </div>
     </div>

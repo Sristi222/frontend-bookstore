@@ -9,7 +9,11 @@ const Login = () => {
 
   const loginUser = async () => {
     try {
-      const res = await axios.post("http://localhost:5000/api/login", { email, password });
+      const res = await axios.post("https://localhost:7085/api/Auth/login", {
+        email,
+        password,
+      });
+
       localStorage.setItem("token", res.data.token);
 
       // 🔐 Check if admin
@@ -22,6 +26,7 @@ const Login = () => {
       }
     } catch (err) {
       alert("Invalid credentials");
+      console.error(err);
     }
   };
 

@@ -1,4 +1,3 @@
-// ✅ Updated Home.jsx to ensure product image is displayed correctly
 "use client";
 
 import { useEffect, useState } from "react";
@@ -11,14 +10,32 @@ const logout = () => localStorage.removeItem("token");
 
 const Home = () => {
   const [products, setProducts] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [priceRange, setPriceRange] = useState(1000);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState("asc");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-  const [priceRange, setPriceRange] = useState(500);
   const navigate = useNavigate();
 
+  const fetchProducts = async () => {
+    try {
+      const res = await axios.get(`https://localhost:7085/api/Products?page=${currentPage}&limit=6`);
+      const filtered = res.data.data
+        .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        .filter(p => parseFloat(p.price) <= priceRange)
+        .sort((a, b) => sortOrder === "asc" ? a.price - b.price : b.price - a.price);
+
+      setProducts(filtered);
+      setTotalPages(Math.ceil(res.data.total / res.data.limit));
+    } catch (err) {
+      console.error("Error fetching products:", err.message);
+    }
+  };
+
   useEffect(() => {
-    axios.get("http://localhost:5000/api/products").then((res) => setProducts(res.data));
-  }, []);
+    fetchProducts();
+  }, [currentPage, searchTerm, priceRange, sortOrder]);
 
   const addToCart = (product) => {
     if (!isLoggedIn()) {
@@ -31,16 +48,15 @@ const Home = () => {
     navigate("/cart");
   };
 
-  const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
-  const toggleMobileFilter = () => setMobileFilterOpen(!mobileFilterOpen);
-  const handlePriceChange = (e) => setPriceRange(e.target.value);
-
   return (
     <div className="app-container">
+      {/* ====================== NAVBAR ====================== */}
       <header className="navbar">
         <div className="navbar-container">
           <a href="/" className="logo">🛍️ JG Enterprise</a>
-          <button className="mobile-menu-toggle" onClick={toggleMobileMenu}>{mobileMenuOpen ? "✕" : "☰"}</button>
+          <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? "✕" : "☰"}
+          </button>
           <nav className={`nav-links ${mobileMenuOpen ? "active" : ""}`}>
             <a href="/" className="nav-link">Home</a>
             <a href="/about" className="nav-link">About</a>
@@ -52,7 +68,6 @@ const Home = () => {
                 <>
                   <a href="/login" className="btn login-btn">Login</a>
                   <a href="/register" className="btn register-btn">Register</a>
-                
                 </>
               )}
               <a href="/cart" className="cart-icon">🛒</a>
@@ -61,6 +76,7 @@ const Home = () => {
         </div>
       </header>
 
+      {/* ====================== HERO SECTION ====================== */}
       <section className="hero">
         <div className="hero-content">
           <div className="hero-text">
@@ -75,42 +91,55 @@ const Home = () => {
         </div>
       </section>
 
+      {/* ====================== MAIN CONTENT ====================== */}
       <main className="main-content">
         <div className="container">
-          <button className="mobile-filter-toggle" onClick={toggleMobileFilter}>
-            {mobileFilterOpen ? "Hide Filters ▲" : "Show Filters ▼"}
-          </button>
+          {/* 🔍 Filters and Sorting */}
+          <div className="filter-bar d-flex flex-wrap justify-content-between align-items-center mb-3">
+            <input
+              className="form-control mb-2 me-2"
+              placeholder="🔍 Search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ width: "200px" }}
+            />
 
-          <aside className={`sidebar ${mobileFilterOpen ? "active" : ""}`}>
-            <div className="filter-section">
-              <h3>Filter Products</h3>
-              <div className="filter-group">
-                <h4>Categories</h4>
-                <div className="checkbox-group">
-                  <label><input type="checkbox" /> Jackets & Coats</label>
-                  <label><input type="checkbox" /> T-Shirts</label>
-                  <label><input type="checkbox" /> Shoes</label>
-                  <label><input type="checkbox" /> Accessories</label>
-                </div>
-              </div>
-              <div className="filter-group">
-                <h4>Price Range</h4>
-                <input type="range" min="0" max="1000" value={priceRange} onChange={handlePriceChange} />
-                <div className="price-labels">
-                  <span>₹0</span>
-                  <span className="current-price">₹{priceRange}</span>
-                  <span>₹1000</span>
-                </div>
-              </div>
+            <select
+              className="form-select mb-2 me-2"
+              style={{ width: "180px" }}
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+            >
+              <option value="asc">Sort by Price: Low to High</option>
+              <option value="desc">Sort by Price: High to Low</option>
+            </select>
+
+            <div className="mb-2">
+              <label className="me-2 fw-bold">Max ₹{priceRange}</label>
+              <input
+                type="range"
+                min="0"
+                max="1000000"
+                value={priceRange}
+                onChange={(e) => setPriceRange(e.target.value)}
+              />
             </div>
-          </aside>
+          </div>
 
+          {/* 🛍️ Product Grid */}
           <section className="product-grid">
             {products.length > 0 ? (
               products.map((product) => (
-                <div className="product-card" key={product._id}>
+                <div className="product-card" key={product.id}>
                   <div className="product-image">
-                    <img src={product.image?.startsWith("/uploads") ? `http://localhost:5000${product.image}` : product.image || "https://via.placeholder.com/150"} alt={product.name} />
+                    <img
+                      src={
+                        product.image?.startsWith("/uploads")
+                          ? `https://localhost:7085${product.image}`
+                          : product.image || "https://via.placeholder.com/150"
+                      }
+                      alt={product.name}
+                    />
                   </div>
                   <div className="product-details">
                     <h3>{product.name}</h3>
@@ -125,14 +154,20 @@ const Home = () => {
                 </div>
               ))
             ) : (
-              <div className="loading-message">
-                <p>Loading products...</p>
-              </div>
+              <div className="loading-message"><p>No products found.</p></div>
             )}
           </section>
+
+          {/* ⏩ Pagination */}
+          <div className="pagination mt-4 d-flex justify-content-center">
+            <button className="btn btn-secondary me-2" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>Prev</button>
+            <span className="align-self-center">Page {currentPage} of {totalPages}</span>
+            <button className="btn btn-secondary ms-2" disabled={currentPage === totalPages} onClick={() => setCurrentPage(currentPage + 1)}>Next</button>
+          </div>
         </div>
       </main>
 
+      {/* ====================== FOOTER ====================== */}
       <footer className="footer">
         <div className="footer-container">
           <div className="footer-columns">
