@@ -21,7 +21,7 @@ const AddProduct = () => {
   const fetchProducts = async () => {
     try {
       const res = await axios.get(`https://localhost:7085/api/Products?page=${page}&limit=${limit}`);
-      setProducts(res.data.data);         // ✅ Correctly access paginated array
+      setProducts(res.data.data);
       setTotal(res.data.total);
     } catch (err) {
       console.error("Error fetching products:", err.message);
@@ -45,16 +45,14 @@ const AddProduct = () => {
     }
 
     const formData = new FormData();
-    formData.append("name", name);
-    formData.append("description", desc);
-    formData.append("price", price);
-    formData.append("image", imageFile);
+    formData.append("Name", name);              // ✅ FIX: uppercase
+    formData.append("Description", desc);       // ✅ FIX: uppercase
+    formData.append("Price", price);            // ✅ FIX: uppercase
+    formData.append("Image", imageFile);
 
     try {
-      await axios.post("https://localhost:7085/api/Products", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      const res = await axios.post("https://localhost:7085/api/Products", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       alert(`✅ Product "${name}" added successfully!`);
       fetchProducts();
@@ -65,8 +63,8 @@ const AddProduct = () => {
       setPreview("");
       setShowForm(false);
     } catch (err) {
-      alert("❌ Failed to add product");
       console.error("Upload error:", err.response?.data || err.message);
+      alert("❌ Failed to add product: " + (err.response?.data?.message || err.message));
     }
   };
 
