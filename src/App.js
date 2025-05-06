@@ -7,8 +7,9 @@ import Cart from "./pages/Cart";
 import ContactUs from "./pages/Contact";
 import ViewProducts from "./pages/ViewProducts";
 import AdminLayout from "./pages/AdminLayout";
-import Bookmarks from "./pages/Bookmark"
-
+import Bookmarks from "./pages/Bookmark";
+import AddBanner from "./pages/AddBanner";
+import ProductDetails from "./pages/ProductDetails"; // ✅ NEW IMPORT
 
 import './App.css';
 
@@ -32,6 +33,7 @@ function App() {
     <div className="app-wrapper">
       <BrowserRouter>
         <Routes>
+
           {/* USER SIDE */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
@@ -40,6 +42,8 @@ function App() {
           <Route path="/contactUs" element={<ContactUs />} />
           <Route path="/bookmarks" element={<Bookmarks />} />
 
+          {/* ✅ PRODUCT DETAILS */}
+          <Route path="/products/:id" element={<ProductDetails />} />
 
           {/* ADMIN SIDE */}
           <Route path="/admin" element={
@@ -49,7 +53,7 @@ function App() {
           }>
             <Route path="add-product" element={<AddProduct />} />
             <Route path="view-products" element={<ViewProducts />} />
-            
+            <Route path="add-banner" element={<AddBanner />} />
           </Route>
 
         </Routes>

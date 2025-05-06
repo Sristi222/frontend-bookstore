@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import axios from "axios"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import "./Home.css"
 
 const isLoggedIn = () => !!localStorage.getItem("token")
@@ -20,6 +20,9 @@ const Home = () => {
   const [sortOrder, setSortOrder] = useState("asc")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [bookmarks, setBookmarks] = useState([])
+
+  const [banner, setBanner] = useState(null)
+  const [showBanner, setShowBanner] = useState(false)
 
   const navigate = useNavigate()
   const API_URL = "https://localhost:7085/api"
@@ -41,7 +44,6 @@ const Home = () => {
         .filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
         .filter((p) => Number.parseFloat(p.price) <= priceRange)
         .sort((a, b) => (sortOrder === "asc" ? a.price - b.price : b.price - a.price))
-
       setProducts(filtered)
       setTotalPages(Math.ceil(res.data.total / res.data.limit))
     } catch (err) {
@@ -62,31 +64,39 @@ const Home = () => {
     }
   }
 
+  const fetchBanner = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/Banners`)
+      if (res.data) {
+        setBanner(res.data)
+        setShowBanner(true)
+      }
+    } catch (err) {
+      console.error("Failed to fetch banner:", err)
+    }
+  }
+
   useEffect(() => {
     fetchProducts()
     fetchBookmarks()
+    fetchBanner()
   }, [currentPage, searchTerm, priceRange, sortOrder])
 
-  const addToCart = async (product) => {
+  const addToCart = async (product, e) => {
+    e.preventDefault()
+    e.stopPropagation()
     if (!isLoggedIn()) {
       alert("Please log in to add items to your cart.")
       navigate("/login")
       return
     }
-
     try {
       const userId = getUserId()
       await axios.post(
         `${API_URL}/Cart?userId=${userId}`,
         { productId: product.id, quantity: 1 },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
       )
-
       alert(`${product.name} added to cart!`)
       navigate("/cart")
     } catch (err) {
@@ -98,12 +108,10 @@ const Home = () => {
   const toggleBookmark = async (product, e) => {
     e.preventDefault()
     e.stopPropagation()
-
     if (!token) {
       alert("Login required to use bookmarks.")
       return
     }
-
     const userId = getUserId()
     const isBookmarked = bookmarks.includes(product.id)
     try {
@@ -117,12 +125,7 @@ const Home = () => {
         await axios.post(
           `${API_URL}/Bookmarks?userId=${userId}`,
           { bookId: product.id },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
+          { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
         )
         setBookmarks([...bookmarks, product.id])
         alert("Bookmark added.")
@@ -136,6 +139,25 @@ const Home = () => {
 
   return (
     <div className="app-container">
+      {/* ✅ BANNER POPUP */}
+      {showBanner && banner && (
+        <div className="banner-popup">
+          <div className="banner-popup-content">
+            <button className="banner-close" onClick={() => setShowBanner(false)}>×</button>
+            <a href={banner.link || "#"}>
+              <img
+                src={banner.imageUrl?.startsWith("/uploads") ? `${API_URL}${banner.imageUrl}` : banner.imageUrl}
+                alt={banner.title}
+                className="banner-popup-image"
+              />
+            </a>
+            <h2>{banner.title}</h2>
+            <p>{banner.description}</p>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ NAVBAR */}
       <header className="navbar">
         <div className="navbar-container">
           <a href="/" className="logo">🛍 JG Enterprise</a>
@@ -149,9 +171,7 @@ const Home = () => {
             {isLoggedIn() && <a href="/bookmarks" className="nav-link">Bookmarks</a>}
             <div className="auth-buttons">
               {isLoggedIn() ? (
-                <button className="btn logout-btn" onClick={() => { logout(); window.location.reload(); }}>
-                  Logout
-                </button>
+                <button className="btn logout-btn" onClick={() => { logout(); window.location.reload(); }}>Logout</button>
               ) : (
                 <>
                   <a href="/login" className="btn login-btn">Login</a>
@@ -212,7 +232,7 @@ const Home = () => {
           <section className="product-grid">
             {products.length > 0 ? (
               products.map((product) => (
-                <div className="product-card" key={product.id}>
+                <Link to={`/products/${product.id}`} className="product-card" key={product.id}>
                   <div className="product-image">
                     <img
                       src={
@@ -229,7 +249,7 @@ const Home = () => {
                     <div className="product-footer">
                       <span className="product-price">Rs. {product.price}</span>
                       <div className="product-actions">
-                        <button className="btn add-to-cart-btn" onClick={() => addToCart(product)}>
+                        <button className="btn add-to-cart-btn" onClick={(e) => addToCart(product, e)}>
                           Add to Basket
                         </button>
                         <button
@@ -246,7 +266,7 @@ const Home = () => {
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))
             ) : (
               <div className="loading-message">
