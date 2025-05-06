@@ -1,36 +1,37 @@
-"use client";
-
-import { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import "./AddProduct.css";
 
 const AddProduct = () => {
-  const [name, setName] = useState("");
-  const [desc, setDesc] = useState("");
-  const [price, setPrice] = useState("");
+  const [form, setForm] = useState({
+    name: "",
+    author: "",
+    genre: "",
+    publisher: "",
+    isbn: "",
+    description: "",
+    language: "",
+    format: "",
+    publicationDate: "",
+    price: "",
+    discountPercent: "",
+    discountStartDate: "",
+    discountEndDate: "",
+    onSale: false,
+    stockQuantity: "",
+    isAvailableInStore: false,
+  });
+
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState("");
-  const [products, setProducts] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [page, setPage] = useState(1);
-  const [limit] = useState(10);
-  const [total, setTotal] = useState(0);
-  const navigate = useNavigate();
+  const [message, setMessage] = useState("");
 
-  const fetchProducts = async () => {
-    try {
-      const res = await axios.get(`https://localhost:7085/api/Products?page=${page}&limit=${limit}`);
-      setProducts(res.data.data);
-      setTotal(res.data.total);
-    } catch (err) {
-      console.error("Error fetching products:", err.message);
-    }
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
-
-  useEffect(() => {
-    fetchProducts();
-  }, [page]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -38,176 +39,98 @@ const AddProduct = () => {
     setPreview(URL.createObjectURL(file));
   };
 
-  const handleSubmit = async () => {
-    if (!name || !desc || !price || !imageFile) {
-      alert("Please fill all fields including image.");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!imageFile) {
+      setMessage("❌ Please upload a product image.");
       return;
     }
 
     const formData = new FormData();
-    formData.append("Name", name);              // ✅ FIX: uppercase
-    formData.append("Description", desc);       // ✅ FIX: uppercase
-    formData.append("Price", price);            // ✅ FIX: uppercase
-    formData.append("Image", imageFile);
+
+    for (const key in form) {
+      const value = form[key];
+      if (value !== "") {
+        if (typeof value === "boolean") {
+          formData.append(key, value.toString());
+        } else if (key === "price" || key === "discountPercent" || key === "stockQuantity") {
+          formData.append(key, parseFloat(value));
+        } else {
+          formData.append(key, value);
+        }
+      }
+    }
+
+    formData.append("image", imageFile);
 
     try {
-      const res = await axios.post("https://localhost:7085/api/Products", formData, {
+      const res = await axios.post("https://localhost:7085/api/products", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      alert(`✅ Product "${name}" added successfully!`);
-      fetchProducts();
-      setName("");
-      setDesc("");
-      setPrice("");
+      setMessage("✅ Product added successfully!");
+      console.log(res.data);
+
+      setForm({
+        name: "",
+        author: "",
+        genre: "",
+        publisher: "",
+        isbn: "",
+        description: "",
+        language: "",
+        format: "",
+        publicationDate: "",
+        price: "",
+        discountPercent: "",
+        discountStartDate: "",
+        discountEndDate: "",
+        onSale: false,
+        stockQuantity: "",
+        isAvailableInStore: false,
+      });
       setImageFile(null);
       setPreview("");
-      setShowForm(false);
     } catch (err) {
-      console.error("Upload error:", err.response?.data || err.message);
-      alert("❌ Failed to add product: " + (err.response?.data?.message || err.message));
-    }
-  };
-
-  const deleteProduct = async (id) => {
-    if (!window.confirm("Delete this product?")) return;
-    try {
-      await axios.delete(`https://localhost:7085/api/Products/${id}`);
-      fetchProducts();
-    } catch (err) {
-      alert("Failed to delete product");
-      console.error(err);
+      console.error("FULL BACKEND ERROR:", err.response?.data);
+      setMessage(`❌ Failed to add product: ${err.response?.data?.message || err.message}`);
     }
   };
 
   return (
-    <div className="add-product-container">
-      <div className="d-flex justify-content-between align-items-center">
-        <h2>Manage Products</h2>
-        <button className="btn btn-success" onClick={() => setShowForm(!showForm)}>
-          {showForm ? "Hide Form" : "➕ Add New Product"}
+    <div style={{ padding: "20px" }}>
+      <h2>Admin &gt; Add Product</h2>
+      {message && <p>{message}</p>}
+      <form onSubmit={handleSubmit} encType="multipart/form-data" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <input type="text" name="name" value={form.name} onChange={handleChange} placeholder="Name" required />
+        <input type="text" name="author" value={form.author} onChange={handleChange} placeholder="Author" />
+        <input type="text" name="genre" value={form.genre} onChange={handleChange} placeholder="Genre" />
+        <input type="text" name="publisher" value={form.publisher} onChange={handleChange} placeholder="Publisher" />
+        <input type="text" name="isbn" value={form.isbn} onChange={handleChange} placeholder="ISBN" />
+        <textarea name="description" value={form.description} onChange={handleChange} placeholder="Description" rows={3} />
+        <input type="text" name="language" value={form.language} onChange={handleChange} placeholder="Language" />
+        <input type="text" name="format" value={form.format} onChange={handleChange} placeholder="Format" />
+        <input type="date" name="publicationDate" value={form.publicationDate} onChange={handleChange} />
+        <input type="number" name="price" value={form.price} onChange={handleChange} placeholder="Price" required />
+        <input type="number" name="discountPercent" value={form.discountPercent} onChange={handleChange} placeholder="Discount %" />
+        <input type="date" name="discountStartDate" value={form.discountStartDate} onChange={handleChange} />
+        <input type="date" name="discountEndDate" value={form.discountEndDate} onChange={handleChange} />
+        <label>
+          <input type="checkbox" name="onSale" checked={form.onSale} onChange={handleChange} /> On Sale
+        </label>
+        <input type="number" name="stockQuantity" value={form.stockQuantity} onChange={handleChange} placeholder="Stock Quantity" />
+        <label>
+          <input type="checkbox" name="isAvailableInStore" checked={form.isAvailableInStore} onChange={handleChange} /> Available in Store
+        </label>
+        <div>
+          <label>Image:</label>
+          <input type="file" accept="image/*" onChange={handleImageChange} required />
+          {preview && <img src={preview} alt="Preview" style={{ maxWidth: "120px", marginTop: "10px" }} />}
+        </div>
+        <button type="submit" style={{ padding: "10px", background: "#333", color: "#fff", border: "none" }}>
+          Add Product
         </button>
-      </div>
-
-      {showForm && (
-        <div className="add-product-card mt-3">
-          <div className="add-product-header">
-            <h3>Add New Product</h3>
-            <p>Enter the details of your new product below</p>
-          </div>
-
-          <div className="add-product-form">
-            <div className="form-group">
-              <label htmlFor="name">Product Name</label>
-              <input
-                id="name"
-                className="form-control"
-                placeholder="Enter product name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="desc">Description</label>
-              <textarea
-                id="desc"
-                className="form-control"
-                placeholder="Enter product description"
-                value={desc}
-                onChange={(e) => setDesc(e.target.value)}
-                rows="4"
-              ></textarea>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="price">Price</label>
-              <div className="price-input-wrapper">
-                <span className="currency-symbol">₹</span>
-                <input
-                  id="price"
-                  type="number"
-                  className="form-control"
-                  placeholder="0.00"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="image">Upload Image</label>
-              <input
-                type="file"
-                id="image"
-                className="form-control"
-                accept="image/*"
-                onChange={handleImageChange}
-              />
-              {preview && <img src={preview} alt="Preview" className="image-preview" />}
-            </div>
-
-            <div className="form-actions">
-              <button className="btn-cancel" onClick={() => setShowForm(false)}>Cancel</button>
-              <button className="btn-submit" onClick={handleSubmit}>Add Product</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="product-table-section mt-5">
-        <h4>All Products (Page {page} of {Math.ceil(total / limit)})</h4>
-        <div className="table-wrapper">
-          <table className="product-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Price</th>
-                <th>Image</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.isArray(products) && products.map((p, i) => (
-                <tr key={p.id}>
-                  <td>{(page - 1) * limit + i + 1}</td>
-                  <td>{p.name}</td>
-                  <td>Rs. {p.price}</td>
-                  <td>
-                    <img
-                      src={p.image?.startsWith("/uploads") ? `https://localhost:7085${p.image}` : p.image}
-                      className="product-thumb"
-                      alt=""
-                    />
-                  </td>
-                  <td>
-                    <button className="btn btn-danger btn-sm" onClick={() => deleteProduct(p.id)}>
-                      🗑 Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="pagination-controls mt-3 d-flex justify-content-between">
-            <button
-              className="btn btn-outline-secondary"
-              disabled={page === 1}
-              onClick={() => setPage(page - 1)}
-            >
-              ◀ Prev
-            </button>
-            <button
-              className="btn btn-outline-secondary"
-              disabled={page * limit >= total}
-              onClick={() => setPage(page + 1)}
-            >
-              Next ▶
-            </button>
-          </div>
-        </div>
-      </div>
+      </form>
     </div>
   );
 };

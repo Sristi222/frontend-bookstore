@@ -18,16 +18,18 @@ const Login = () => {
       });
 
       const token = res.data.token;
+      const userId = res.data.userId;  // ✅ added this
+
       localStorage.setItem("token", token);
+      localStorage.setItem("userId", userId); // ✅ added this
 
-      // ✅ Decode token
       const decoded = jwtDecode(token);
+      console.log("Decoded token:", decoded);
 
-      console.log("Decoded token:", decoded); // check structure
+      const userRoles =
+        decoded.role ||
+        decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
 
-      const userRoles = decoded.role || decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
-
-      // ✅ Check role (array or string)
       const isAdmin =
         (Array.isArray(userRoles) && userRoles.includes("Admin")) ||
         userRoles === "Admin";
@@ -35,15 +37,13 @@ const Login = () => {
       localStorage.setItem("isAdmin", isAdmin ? "true" : "false");
 
       if (isAdmin) {
-        navigate("/add-product");
+        navigate("/admin");
       } else {
         navigate("/");
       }
     } catch (err) {
       console.error(err);
-      alert(
-        err.response?.data?.message || "Login failed. Please check credentials."
-      );
+      alert(err.response?.data?.message || "Login failed. Please check credentials.");
     } finally {
       setLoading(false);
     }

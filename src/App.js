@@ -5,23 +5,24 @@ import Register from "./pages/Register";
 import AddProduct from "./pages/AddProduct";
 import Cart from "./pages/Cart";
 import ContactUs from "./pages/Contact";
+import ViewProducts from "./pages/ViewProducts";
+import AdminLayout from "./pages/AdminLayout";
+import Bookmarks from "./pages/Bookmark"
+
 
 import './App.css';
 
 const isLoggedIn = () => !!localStorage.getItem("token");
 const isAdmin = () => localStorage.getItem("isAdmin") === "true";
 
-// Protected route for normal users
 function PrivateRoute({ children }) {
   return isLoggedIn() ? children : <Navigate to="/login" />;
 }
 
-// Protected route for admins only
 function AdminRoute({ children }) {
   return isLoggedIn() && isAdmin() ? children : <Navigate to="/login" />;
 }
 
-// Prevent logged-in users from accessing login/register again
 function GuestRoute({ children }) {
   return isLoggedIn() ? <Navigate to="/" /> : children;
 }
@@ -31,12 +32,26 @@ function App() {
     <div className="app-wrapper">
       <BrowserRouter>
         <Routes>
+          {/* USER SIDE */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
           <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
-          <Route path="/add-product" element={<AdminRoute><AddProduct /></AdminRoute>} />
           <Route path="/cart" element={<PrivateRoute><Cart /></PrivateRoute>} />
           <Route path="/contactUs" element={<ContactUs />} />
+          <Route path="/bookmarks" element={<Bookmarks />} />
+
+
+          {/* ADMIN SIDE */}
+          <Route path="/admin" element={
+            <AdminRoute>
+              <AdminLayout />
+            </AdminRoute>
+          }>
+            <Route path="add-product" element={<AddProduct />} />
+            <Route path="view-products" element={<ViewProducts />} />
+            
+          </Route>
+
         </Routes>
       </BrowserRouter>
     </div>
