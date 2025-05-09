@@ -10,6 +10,9 @@ import AdminLayout from "./pages/AdminLayout";
 import Bookmarks from "./pages/Bookmark";
 import AddBanner from "./pages/AddBanner";
 import ProductDetails from "./pages/ProductDetails"; // ✅ NEW IMPORT
+import OrderBill from "./pages/OrderBill";
+
+import OrderHistory from "./pages/OrderHistory"
 
 import './App.css';
 
@@ -41,6 +44,8 @@ function App() {
           <Route path="/cart" element={<PrivateRoute><Cart /></PrivateRoute>} />
           <Route path="/contactUs" element={<ContactUs />} />
           <Route path="/bookmarks" element={<Bookmarks />} />
+          <Route path="/order-bill" element={<OrderBill />} />
+        <Route path="/orders" element={<OrderHistory />} />
 
           {/* ✅ PRODUCT DETAILS */}
           <Route path="/products/:id" element={<ProductDetails />} />

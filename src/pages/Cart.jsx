@@ -3,33 +3,37 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { Menu, X, ShoppingCart, Settings } from "lucide-react";
+import "./Home.css";
 import "./Cart.css";
 
 const Cart = () => {
-  const [cart, setCart] = useState({ items: [], subtotal: 0, total: 0, itemCount: 0 });
+  const [cart, setCart] = useState([]);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [customerName, setCustomerName] = useState("");
-  const [customerAddress, setCustomerAddress] = useState("");
-  const [formErrors, setFormErrors] = useState({});
   const navigate = useNavigate();
 
   const isLoggedIn = () => !!localStorage.getItem("token");
   const API_URL = "https://localhost:7085/api";
   const userId = localStorage.getItem("userId") || "guest";
+  const token = localStorage.getItem("token");
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+  };
 
   const fetchCart = async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/Cart?userId=${userId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
+        headers: { Authorization: `Bearer ${token || ""}` },
       });
-      setCart(response.data);
-      setError(null);
+      setCart(response.data.items || []);
+      setLoading(false);
     } catch (err) {
       console.error("Error fetching cart:", err.response?.data || err.message);
-      setError("Failed to load cart. Please try again.");
-    } finally {
+      setCart([]);
       setLoading(false);
     }
   };
@@ -38,181 +42,200 @@ const Cart = () => {
     fetchCart();
   }, []);
 
-  const validateForm = () => {
-    const errors = {};
-    if (!customerName.trim()) errors.name = "Name is required";
-    if (!customerAddress.trim()) errors.address = "Address is required";
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const sendToWhatsApp = () => {
-    if (!validateForm()) return;
-
-    const msg = cart.items
-      .map((item) => `- ${item.product.name} x${item.quantity} (Rs. ${item.subtotal})`)
-      .join("%0A");
-
-    const customerInfo = `%0A%0A[Customer Details]%0AName: ${customerName}%0AAddress: ${customerAddress}`;
-    const fullMessage = `Order:%0A${msg}%0A%0ATotal: Rs.${cart.total}${customerInfo}`;
-
-    window.open(`https://wa.me/9779813244622?text=${fullMessage}`, "_blank");
-  };
-
-  const clearCart = async () => {
-    try {
-      await axios.delete(`${API_URL}/Cart?userId=${userId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
-      });
-      setCart({ items: [], subtotal: 0, total: 0, itemCount: 0 });
-    } catch (err) {
-      alert("Failed to clear cart. Please try again.");
-      console.error("Error clearing cart:", err);
-    }
-  };
-
-  const removeItem = async (itemId) => {
-    try {
-      await axios.delete(`${API_URL}/Cart/${itemId}?userId=${userId}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
-      });
-      fetchCart();
-    } catch (err) {
-      alert("Failed to remove item. Please try again.");
-      console.error("Error removing item:", err);
-    }
-  };
-
   const updateQuantity = async (itemId, newQuantity) => {
     if (newQuantity < 1) return;
-
     try {
       await axios.put(
         `${API_URL}/Cart/${itemId}?userId=${userId}`,
         { quantity: newQuantity },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${token || ""}`,
             "Content-Type": "application/json",
           },
         }
       );
       fetchCart();
     } catch (err) {
-      alert("Failed to update quantity. Please try again.");
       console.error("Error updating quantity:", err);
     }
+  };
+
+  const calculateTotal = () => {
+    return cart.reduce((total, item) => total + item.subtotal, 0);
+  };
+
+  const proceedToOrderBill = () => {
+    localStorage.setItem("cartItems", JSON.stringify(cart));
+    navigate("/order-bill"); // 🟢 new page for Order Summary
   };
 
   if (loading) return <div className="loading">Loading your cart...</div>;
 
   return (
-    <div className="cart-page">
-      <div className="cart-container">
-        <div className="cart-header">
-          <h2>Your Shopping Cart</h2>
-          <p>{cart.itemCount} {cart.itemCount === 1 ? "item" : "items"} in your cart</p>
-          {error && <p className="error-message">{error}</p>}
+    <div className="app-container">
+      <header className="navbar">
+        <div className="navbar-container">
+          <a href="/" className="logo">BOOK SHOP</a>
+          <nav className={`nav-links ${mobileMenuOpen ? "active" : ""}`}>
+            <div className="nav-center">
+              <a href="/" className="nav-link">Home</a>
+              <a href="/shop" className="nav-link">Shop</a>
+              <a href="/cart" className="nav-link">Cart</a>
+              <a href="/bookmarks" className="nav-link">Bookmarks</a>
+            </div>
+            <div className="nav-right">
+              {isLoggedIn() ? (
+                <button
+                  className="btn logout-btn"
+                  onClick={() => { logout(); window.location.reload(); }}
+                >
+                  Logout
+                </button>
+              ) : (
+                <>
+                  <a href="/login" className="btn login-btn">Login</a>
+                  <a href="/register" className="btn signup-btn">Sign Up</a>
+                </>
+              )}
+              <a href="/cart" className="cart-icon">
+                <ShoppingCart size={20} style={{ color: "#b8860b" }} />
+              </a>
+              <button className="settings-icon">
+                <Settings size={20} style={{ color: "#b8860b" }} />
+              </button>
+            </div>
+          </nav>
+          <button
+            className="mobile-menu-toggle"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? (
+              <X style={{ color: "#b8860b" }} />
+            ) : (
+              <Menu style={{ color: "#b8860b" }} />
+            )}
+          </button>
         </div>
+      </header>
 
-        {cart.items.length === 0 ? (
-          <div className="empty-cart">
-            <div className="empty-cart-icon">🛒</div>
-            <h3>Your cart is empty</h3>
-            <p>Looks like you haven't added anything to your cart yet.</p>
-            <button className="continue-shopping-btn" onClick={() => navigate("/")}>
-              Continue Shopping
-            </button>
-          </div>
-        ) : (
-          <div className="cart-content">
-            <div className="cart-items">
-              {cart.items.map((item, index) => (
-                <div className="cart-item" key={item.id || index}>
-                  <div className="item-image">
-                    <img
-                      src={
-                        item.product.image?.startsWith("/uploads")
-                          ? `https://localhost:7085${item.product.image}`
-                          : item.product.image || "https://via.placeholder.com/150"
-                      }
-                      alt={item.product.name}
-                    />
+      <main className="cart-main">
+        <div className="cart-container">
+          <h1 className="cart-title">Cart Items</h1>
+          <div className="cart-details">
+            <h2 className="cart-subtitle">Your Cart Details</h2>
+            {cart.length === 0 ? (
+              <div className="empty-cart">
+                <h3>Your cart is empty</h3>
+                <p>Looks like you haven't added any books to your cart yet.</p>
+                <button
+                  className="continue-shopping-btn"
+                  onClick={() => navigate("/")}
+                >
+                  Continue Shopping
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="cart-items">
+                  {cart.map((item) => (
+                    <div className="cart-item" key={item.id}>
+                      <div className="item-image">
+                        <img
+                          src={
+                            item.product.image?.startsWith("/uploads")
+                              ? `https://localhost:7085${item.product.image}`
+                              : item.product.image || "/placeholder.svg"
+                          }
+                          alt={item.product.name}
+                        />
+                      </div>
+                      <div className="item-name">
+                        <h3>Book Name</h3>
+                        <p>{item.product.name}</p>
+                      </div>
+                      <div className="item-description">
+                        <h3>{item.product.description}</h3>
+                      </div>
+                      <div className="item-price">
+                        <h3>Rs {item.product.price}</h3>
+                      </div>
+                      <div className="item-quantity">
+                        <h3>Copies</h3>
+                        <div className="quantity-control">
+                          <button
+                            onClick={() =>
+                              updateQuantity(item.id, item.quantity - 1)
+                            }
+                            disabled={item.quantity <= 1}
+                          >
+                            -
+                          </button>
+                          <span>{item.quantity}</span>
+                          <button
+                            onClick={() =>
+                              updateQuantity(item.id, item.quantity + 1)
+                            }
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="cart-footer">
+                  <div className="cart-total">
+                    <h3>Total Price: Rs. {calculateTotal().toFixed(2)}</h3>
                   </div>
-                  <div className="item-details">
-                    <h3>{item.product.name}</h3>
-                    <p className="item-description">{item.product.description}</p>
-                  </div>
-                  <div className="item-quantity">
+                  <div className="cart-actions">
                     <button
-                      className="quantity-btn"
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      disabled={item.quantity <= 1}
+                      className="checkout-btn"
+                      onClick={proceedToOrderBill}
                     >
-                      -
+                      Proceed to Checkout
                     </button>
-                    <span className="quantity">{item.quantity}</span>
-                    <button
-                      className="quantity-btn"
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                    >
-                      +
-                    </button>
+                    <button className="details-btn">Add Personal Details</button>
                   </div>
-                  <div className="item-price">Rs. {item.subtotal?.toFixed(2)}</div>
-                  <button className="remove-item-btn" onClick={() => removeItem(item.id)}>✕</button>
                 </div>
-              ))}
+              </>
+            )}
+          </div>
+        </div>
+      </main>
+
+      <footer className="footer">
+        <div className="footer-container">
+          <div className="footer-columns">
+            <div className="footer-column">
+              <h3>Book Shop</h3>
+              <p>Your one-stop destination for books that inspire, educate, and entertain.</p>
             </div>
-
-            <div className="cart-summary">
-              <h3>Order Summary</h3>
-              <div className="summary-row">
-                <span>Subtotal</span><span>Rs. {cart.subtotal?.toFixed(2)}</span>
-              </div>
-              <div className="summary-row">
-                <span>Shipping</span><span>Free</span>
-              </div>
-              <div className="summary-divider"></div>
-              <div className="summary-row total">
-                <span>Total</span><span>Rs. {cart.total?.toFixed(2)}</span>
-              </div>
-
-              <div className="customer-details">
-                <h4>Customer Information</h4>
-                <div className="form-group">
-                  <label htmlFor="customerName">Your Name</label>
-                  <input
-                    type="text"
-                    id="customerName"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Enter your full name"
-                    className={formErrors.name ? "error" : ""}
-                  />
-                  {formErrors.name && <span className="error-message">{formErrors.name}</span>}
-                </div>
-                <div className="form-group">
-                  <label htmlFor="customerAddress">Delivery Address</label>
-                  <textarea
-                    id="customerAddress"
-                    value={customerAddress}
-                    onChange={(e) => setCustomerAddress(e.target.value)}
-                    placeholder="Enter your complete delivery address"
-                    rows="3"
-                    className={formErrors.address ? "error" : ""}
-                  ></textarea>
-                  {formErrors.address && <span className="error-message">{formErrors.address}</span>}
-                </div>
-              </div>
-
-              <button className="checkout-btn" onClick={sendToWhatsApp}>Checkout via WhatsApp</button>
-              <button className="clear-cart-btn" onClick={clearCart}>Clear Cart</button>
-              <button className="continue-shopping-link" onClick={() => navigate("/")}>← Continue Shopping</button>
+            <div className="footer-column">
+              <h4>Shop</h4>
+              <ul>
+                <li><a href="#">New Arrivals</a></li>
+                <li><a href="#">Best Sellers</a></li>
+                <li><a href="#">Sale</a></li>
+                <li><a href="#">Collections</a></li>
+              </ul>
+            </div>
+            <div className="footer-column">
+              <h4>Help</h4>
+              <ul>
+                <li><a href="#">Contact Us</a></li>
+                <li><a href="#">FAQs</a></li>
+                <li><a href="#">Shipping</a></li>
+                <li><a href="#">Returns</a></li>
+              </ul>
             </div>
           </div>
-        )}
-      </div>
+          <div className="footer-bottom">
+            <p>© {new Date().getFullYear()} Book Shop. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

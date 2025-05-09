@@ -1,152 +1,160 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import axios from "axios"
-import { useNavigate, Link } from "react-router-dom"
-import "./Home.css"
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate, Link } from "react-router-dom";
+import "./Home.css";
 
-const isLoggedIn = () => !!localStorage.getItem("token")
+const isLoggedIn = () => !!localStorage.getItem("token");
 const logout = () => {
-  localStorage.removeItem("token")
-  localStorage.removeItem("userId")
-}
+  localStorage.removeItem("token");
+  localStorage.removeItem("userId");
+};
 
 const Home = () => {
-  const [products, setProducts] = useState([])
-  const [totalPages, setTotalPages] = useState(1)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [priceRange, setPriceRange] = useState(1000)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [sortOrder, setSortOrder] = useState("asc")
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [bookmarks, setBookmarks] = useState([])
+  const [products, setProducts] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [priceRange, setPriceRange] = useState(1000);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState("asc");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [bookmarks, setBookmarks] = useState([]);
+  const [banner, setBanner] = useState(null);
+  const [showBanner, setShowBanner] = useState(false);
 
-  const [banner, setBanner] = useState(null)
-  const [showBanner, setShowBanner] = useState(false)
-
-  const navigate = useNavigate()
-  const API_URL = "https://localhost:7085/api"
-  const token = localStorage.getItem("token")
+  const navigate = useNavigate();
+  const BACKEND_URL = "https://localhost:7085";
+  const API_URL = `${BACKEND_URL}/api`;
+  const token = localStorage.getItem("token");
 
   const getUserId = () => {
-    let id = localStorage.getItem("userId")
+    let id = localStorage.getItem("userId");
     if (!id || id.startsWith("guest-")) {
-      id = "guest-" + Math.random().toString(36).substring(2, 15)
-      localStorage.setItem("userId", id)
+      id = "guest-" + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem("userId", id);
     }
-    return id
-  }
+    return id;
+  };
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get(`${API_URL}/Products?page=${currentPage}&limit=6`)
+      const res = await axios.get(`${API_URL}/Products?page=${currentPage}&limit=6`);
       const filtered = res.data.data
         .filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
-        .filter((p) => Number.parseFloat(p.price) <= priceRange)
-        .sort((a, b) => (sortOrder === "asc" ? a.price - b.price : b.price - a.price))
-      setProducts(filtered)
-      setTotalPages(Math.ceil(res.data.total / res.data.limit))
+        .filter((p) => Number.parseFloat(p.finalPrice) <= priceRange)
+        .sort((a, b) => (sortOrder === "asc" ? a.finalPrice - b.finalPrice : b.finalPrice - a.finalPrice));
+      setProducts(filtered);
+      setTotalPages(Math.ceil(res.data.total / res.data.limit));
     } catch (err) {
-      console.error("Error fetching products:", err.message)
+      console.error("Error fetching products:", err.message);
     }
-  }
+  };
 
   const fetchBookmarks = async () => {
-    const userId = getUserId()
-    if (!token || userId.startsWith("guest-")) return
+    const userId = getUserId();
+    if (!token || userId.startsWith("guest-")) return;
     try {
       const res = await axios.get(`${API_URL}/Bookmarks?userId=${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
-      })
-      setBookmarks(res.data.map((b) => b.bookId))
+      });
+      setBookmarks(res.data.map((b) => b.bookId));
     } catch (err) {
-      console.error("Failed to load bookmarks:", err)
+      console.error("Failed to load bookmarks:", err);
     }
-  }
+  };
 
   const fetchBanner = async () => {
     try {
-      const res = await axios.get(`${API_URL}/Banners`)
+      const res = await axios.get(`${API_URL}/Banners`);
       if (res.data) {
-        setBanner(res.data)
-        setShowBanner(true)
+        const now = new Date();
+        const validBanners = res.data.filter(
+          (b) => b.isActive &&
+            (!b.startDateTime || new Date(b.startDateTime) <= now) &&
+            (!b.endDateTime || new Date(b.endDateTime) >= now)
+        );
+        if (validBanners.length > 0) {
+          setBanner(validBanners[0]);
+          setShowBanner(true);
+        }
       }
     } catch (err) {
-      console.error("Failed to fetch banner:", err)
+      console.error("Failed to fetch banner:", err);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchProducts()
-    fetchBookmarks()
-    fetchBanner()
-  }, [currentPage, searchTerm, priceRange, sortOrder])
+    fetchProducts();
+    fetchBookmarks();
+    fetchBanner();
+  }, [currentPage, searchTerm, priceRange, sortOrder]);
 
   const addToCart = async (product, e) => {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
     if (!isLoggedIn()) {
-      alert("Please log in to add items to your cart.")
-      navigate("/login")
-      return
+      alert("Please log in to add items to your cart.");
+      navigate("/login");
+      return;
     }
     try {
-      const userId = getUserId()
+      const userId = getUserId();
       await axios.post(
         `${API_URL}/Cart?userId=${userId}`,
         { productId: product.id, quantity: 1 },
         { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
-      )
-      alert(`${product.name} added to cart!`)
-      navigate("/cart")
+      );
+      alert(`${product.name} added to cart!`);
+      navigate("/cart");
     } catch (err) {
-      alert("Failed to add item to cart. Please try again.")
-      console.error("Error adding to cart:", err.response?.data || err.message)
+      alert("Failed to add item to cart. Please try again.");
+      console.error("Error adding to cart:", err.response?.data || err.message);
     }
-  }
+  };
 
   const toggleBookmark = async (product, e) => {
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
     if (!token) {
-      alert("Login required to use bookmarks.")
-      return
+      alert("Login required to use bookmarks.");
+      return;
     }
-    const userId = getUserId()
-    const isBookmarked = bookmarks.includes(product.id)
+    const userId = getUserId();
+    const isBookmarked = bookmarks.includes(product.id);
     try {
       if (isBookmarked) {
         await axios.delete(`${API_URL}/Bookmarks/${product.id}?userId=${userId}`, {
           headers: { Authorization: `Bearer ${token}` },
-        })
-        setBookmarks(bookmarks.filter((id) => id !== product.id))
-        alert("Bookmark removed.")
+        });
+        setBookmarks(bookmarks.filter((id) => id !== product.id));
+        alert("Bookmark removed.");
       } else {
         await axios.post(
           `${API_URL}/Bookmarks?userId=${userId}`,
           { bookId: product.id },
           { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
-        )
-        setBookmarks([...bookmarks, product.id])
-        alert("Bookmark added.")
+        );
+        setBookmarks([...bookmarks, product.id]);
+        alert("Bookmark added.");
       }
     } catch (err) {
-      console.error("Bookmark toggle failed:", err)
+      console.error("Bookmark toggle failed:", err);
     }
-  }
+  };
 
-  const isBookmarkedFunc = (productId) => bookmarks.includes(productId)
+  const isBookmarkedFunc = (productId) => bookmarks.includes(productId);
 
   return (
     <div className="app-container">
-      {/* ✅ BANNER POPUP */}
+      {/* Banner */}
       {showBanner && banner && (
         <div className="banner-popup">
           <div className="banner-popup-content">
             <button className="banner-close" onClick={() => setShowBanner(false)}>×</button>
             <a href={banner.link || "#"}>
               <img
-                src={banner.imageUrl?.startsWith("/uploads") ? `${API_URL}${banner.imageUrl}` : banner.imageUrl}
+                src={banner.imageUrl?.startsWith("/uploads") ? `${BACKEND_URL}${banner.imageUrl}` : banner.imageUrl}
                 alt={banner.title}
                 className="banner-popup-image"
               />
@@ -157,7 +165,7 @@ const Home = () => {
         </div>
       )}
 
-      {/* ✅ NAVBAR */}
+      {/* Navbar */}
       <header className="navbar">
         <div className="navbar-container">
           <a href="/" className="logo">🛍 JG Enterprise</a>
@@ -184,6 +192,7 @@ const Home = () => {
         </div>
       </header>
 
+      {/* Hero */}
       <section className="hero">
         <div className="hero-content">
           <div className="hero-text">
@@ -198,6 +207,7 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Products */}
       <main className="main-content">
         <div className="container">
           <div className="filter-bar d-flex flex-wrap justify-content-between align-items-center mb-3">
@@ -233,13 +243,28 @@ const Home = () => {
             {products.length > 0 ? (
               products.map((product) => (
                 <Link to={`/products/${product.id}`} className="product-card" key={product.id}>
-                  <div className="product-image">
+                  <div className="product-image" style={{ position: "relative" }}>
+                    {product.finalPrice !== product.price && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "8px",
+                          left: "8px",
+                          background: "red",
+                          color: "white",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        SALE {Math.round(100 - (product.finalPrice / product.price) * 100)}% OFF
+                      </div>
+                    )}
                     <img
-                      src={
-                        product.image?.startsWith("/uploads")
-                          ? `https://localhost:7085${product.image}`
-                          : product.image || "https://via.placeholder.com/150"
-                      }
+                      src={product.image?.startsWith("/uploads")
+                        ? `${BACKEND_URL}${product.image}`
+                        : product.image || "https://via.placeholder.com/150"}
                       alt={product.name}
                     />
                   </div>
@@ -247,7 +272,18 @@ const Home = () => {
                     <h3>{product.name}</h3>
                     <p>{product.description}</p>
                     <div className="product-footer">
-                      <span className="product-price">Rs. {product.price}</span>
+                      {product.finalPrice !== product.price ? (
+                        <span className="product-price">
+                          <span style={{ textDecoration: "line-through", color: "gray", marginRight: "8px" }}>
+                            Rs. {Number(product.price).toFixed(2)}
+                          </span>
+                          <span style={{ color: "red", fontWeight: "bold" }}>
+                            Rs. {Number(product.finalPrice).toFixed(2)}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="product-price">Rs. {Number(product.price).toFixed(2)}</span>
+                      )}
                       <div className="product-actions">
                         <button className="btn add-to-cart-btn" onClick={(e) => addToCart(product, e)}>
                           Add to Basket
@@ -269,20 +305,14 @@ const Home = () => {
                 </Link>
               ))
             ) : (
-              <div className="loading-message">
-                <p>No products found.</p>
-              </div>
+              <div className="loading-message"><p>No products found.</p></div>
             )}
           </section>
 
           <div className="pagination mt-4 d-flex justify-content-center">
-            <button className="btn btn-secondary me-2" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>
-              Prev
-            </button>
+            <button className="btn btn-secondary me-2" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>Prev</button>
             <span className="align-self-center">Page {currentPage} of {totalPages}</span>
-            <button className="btn btn-secondary ms-2" disabled={currentPage === totalPages} onClick={() => setCurrentPage(currentPage + 1)}>
-              Next
-            </button>
+            <button className="btn btn-secondary ms-2" disabled={currentPage === totalPages} onClick={() => setCurrentPage(currentPage + 1)}>Next</button>
           </div>
         </div>
       </main>
@@ -327,7 +357,7 @@ const Home = () => {
         </div>
       </footer>
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;
