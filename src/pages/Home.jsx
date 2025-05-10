@@ -70,7 +70,8 @@ const Home = () => {
       if (res.data) {
         const now = new Date();
         const validBanners = res.data.filter(
-          (b) => b.isActive &&
+          (b) =>
+            b.isActive &&
             (!b.startDateTime || new Date(b.startDateTime) <= now) &&
             (!b.endDateTime || new Date(b.endDateTime) >= now)
         );
@@ -177,6 +178,7 @@ const Home = () => {
             <a href="/about" className="nav-link">About</a>
             <a href="/ContactUs" className="nav-link">Contact</a>
             {isLoggedIn() && <a href="/bookmarks" className="nav-link">Bookmarks</a>}
+            {isLoggedIn() && <a href="/orders" className="nav-link">My Orders</a>}
             <div className="auth-buttons">
               {isLoggedIn() ? (
                 <button className="btn logout-btn" onClick={() => { logout(); window.location.reload(); }}>Logout</button>

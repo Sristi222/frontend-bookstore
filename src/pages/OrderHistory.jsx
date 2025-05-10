@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import "./OrderHistory.css"; // optional for styling
+import axios from "axios";
+import "./OrderHistory.css";
 
 const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
@@ -49,6 +49,7 @@ const OrderHistory = () => {
   return (
     <div className="order-history-container">
       <h1>Your Orders</h1>
+
       {orders.length === 0 ? (
         <p>No orders placed yet.</p>
       ) : (
@@ -56,6 +57,7 @@ const OrderHistory = () => {
           <thead>
             <tr>
               <th>Order ID</th>
+              <th>Claim Code</th> {/* ✅ added */}
               <th>Status</th>
               <th>Total (Rs.)</th>
               <th>Date</th>
@@ -67,6 +69,7 @@ const OrderHistory = () => {
             {orders.map((order) => (
               <tr key={order.id}>
                 <td>{order.id}</td>
+                <td>{order.claimCode}</td> {/* ✅ display claim code */}
                 <td>{order.status}</td>
                 <td>{order.totalAmount.toFixed(2)}</td>
                 <td>{new Date(order.createdAt).toLocaleString()}</td>
@@ -78,7 +81,7 @@ const OrderHistory = () => {
                   ))}
                 </td>
                 <td>
-                  {(order.status === "Pending" || order.status === "Processing") ? (
+                  {order.status === "Pending" || order.status === "Processing" ? (
                     <button onClick={() => cancelOrder(order.id)}>Cancel</button>
                   ) : (
                     "-"
@@ -89,6 +92,7 @@ const OrderHistory = () => {
           </tbody>
         </table>
       )}
+
       <button onClick={() => navigate("/")}>← Back to Home</button>
     </div>
   );
