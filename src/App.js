@@ -15,6 +15,7 @@ import OrderHistory from "./pages/OrderHistory";
 import StaffLayout from "./pages/StaffLayout";
 import StaffOrders from "./pages/StaffOrders";
 import StaffProcessClaim from "./pages/StaffProcessClaim";
+import CustomerActivityNotification from './pages/CustomerActivityNotification';
 
 import './App.css';
 
@@ -73,6 +74,9 @@ function App() {
           </Route>
 
         </Routes>
+        
+        {/* Add the CustomerActivityNotification component here, outside of Routes */}
+        <CustomerActivityNotification />
       </BrowserRouter>
     </div>
   );
