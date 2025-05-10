@@ -3,10 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const ProductDetails = () => {
-  const { id } = useParams(); // Get product ID from URL
+  const { id } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [reviews, setReviews] = useState([]); // ✅ added
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -16,13 +17,25 @@ const ProductDetails = () => {
       } catch (err) {
         console.error("Failed to fetch product:", err);
         alert("Product not found.");
-        navigate("/"); // redirect if not found
+        navigate("/");
       } finally {
         setLoading(false);
       }
     };
     fetchProduct();
   }, [id, navigate]);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const res = await axios.get(`https://localhost:7085/api/Reviews/${id}`);
+        setReviews(res.data);
+      } catch (err) {
+        console.error("Failed to fetch reviews:", err);
+      }
+    };
+    fetchReviews();
+  }, [id]);
 
   if (loading) return <p>Loading product details...</p>;
   if (!product) return <p>Product not found.</p>;
@@ -64,6 +77,20 @@ const ProductDetails = () => {
 
       <p><strong>Description:</strong></p>
       <p>{product.description || "No description available."}</p>
+
+      <hr />
+      <h3>Reviews</h3>
+      {reviews.length > 0 ? (
+        reviews.map((review, idx) => (
+          <div key={idx} style={{ border: "1px solid #ccc", padding: "10px", marginBottom: "10px" }}>
+            <p><strong>Rating:</strong> {review.rating} ⭐</p>
+            <p><strong>Comment:</strong> {review.comment}</p>
+            <p style={{ fontSize: "12px", color: "gray" }}>Reviewed by User ID: {review.userId}</p>
+          </div>
+        ))
+      ) : (
+        <p>No reviews yet for this product.</p>
+      )}
     </div>
   );
 };
