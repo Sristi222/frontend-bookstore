@@ -16,6 +16,7 @@ import StaffLayout from "./pages/StaffLayout";
 import StaffOrders from "./pages/StaffOrders";
 import StaffProcessClaim from "./pages/StaffProcessClaim";
 import CustomerActivityNotification from './pages/CustomerActivityNotification';
+import MyReviews from "./pages/MyReviews";
 
 import './App.css';
 
@@ -54,6 +55,7 @@ function App() {
           <Route path="/bookmarks" element={<PrivateRoute><Bookmarks /></PrivateRoute>} />
           <Route path="/order-bill" element={<PrivateRoute><OrderBill /></PrivateRoute>} />
           <Route path="/orders" element={<PrivateRoute><OrderHistory /></PrivateRoute>} />
+          <Route path="/my-reviews" element={<PrivateRoute><MyReviews /></PrivateRoute>} />
 
           {/* PRODUCT DETAILS */}
           <Route path="/products/:id" element={<ProductDetails />} />
