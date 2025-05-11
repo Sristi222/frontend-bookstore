@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import "./BannerManager.css";
 
 const BannerManager = () => {
   const [banners, setBanners] = useState([]);
@@ -46,11 +47,7 @@ const BannerManager = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = new FormData();
-    data.append("Title", form.title);
-    data.append("SubTitle", form.subTitle);
-    data.append("Link", form.link);
-    data.append("StartDateTime", form.startDateTime);
-    data.append("EndDateTime", form.endDateTime);
+    Object.keys(form).forEach((key) => data.append(key, form[key]));
     if (imageFile) data.append("Image", imageFile);
 
     try {
@@ -91,58 +88,56 @@ const BannerManager = () => {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Banner Manager</h2>
-      <button onClick={() => setShowModal(true)} style={{ marginBottom: "10px" }}>
+    <div className="banner-container">
+      <h2 className="banner-heading">Banner Manager</h2>
+      <button className="btn-add-banner" onClick={() => setShowModal(true)}>
         ➕ Add Banner
       </button>
 
-      {/* 🟢 Modal */}
       {showModal && (
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-          background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center"
-        }}>
-          <div style={{ background: "#fff", padding: "20px", width: "400px", borderRadius: "8px" }}>
+        <div className="modal-backdrop">
+          <div className="modal-card">
             <h3>Add Banner</h3>
-            <form onSubmit={handleSubmit}>
-              <input type="text" name="title" placeholder="Title" value={form.title} onChange={handleChange} required style={{ width: "100%" }} /><br /><br />
-              <input type="text" name="subTitle" placeholder="SubTitle" value={form.subTitle} onChange={handleChange} required style={{ width: "100%" }} /><br /><br />
-              <input type="text" name="link" placeholder="Link (optional)" value={form.link} onChange={handleChange} style={{ width: "100%" }} /><br /><br />
-              <input type="datetime-local" name="startDateTime" value={form.startDateTime} onChange={handleChange} style={{ width: "100%" }} /><br /><br />
-              <input type="datetime-local" name="endDateTime" value={form.endDateTime} onChange={handleChange} style={{ width: "100%" }} /><br /><br />
-              <input type="file" accept="image/*" onChange={handleFileChange} required /><br /><br />
-              {preview && <img src={preview} alt="preview" style={{ maxWidth: "100%" }} />}
-              <br />
-              <button type="submit">Submit</button>
-              <button type="button" onClick={() => setShowModal(false)} style={{ marginLeft: "10px" }}>Cancel</button>
+            <form onSubmit={handleSubmit} className="banner-form">
+              <input type="text" name="title" placeholder="Title" value={form.title} onChange={handleChange} required className="form-control" />
+              <input type="text" name="subTitle" placeholder="Subtitle" value={form.subTitle} onChange={handleChange} required className="form-control" />
+              <input type="text" name="link" placeholder="Link (optional)" value={form.link} onChange={handleChange} className="form-control" />
+              <input type="datetime-local" name="startDateTime" value={form.startDateTime} onChange={handleChange} className="form-control" />
+              <input type="datetime-local" name="endDateTime" value={form.endDateTime} onChange={handleChange} className="form-control" />
+              <input type="file" accept="image/*" onChange={handleFileChange} required className="form-control" />
+              {preview && <img src={preview} alt="Preview" className="image-preview" />}
+              <div className="form-actions">
+                <button type="submit" className="btn-submit">Submit</button>
+                <button type="button" onClick={() => setShowModal(false)} className="btn-cancel">Cancel</button>
+              </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* 🟢 Table */}
-      <table border="1" cellPadding="5" style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr>
-            <th>ID</th><th>Title</th><th>Subtitle</th><th>Active</th><th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {banners.map(b => (
-            <tr key={b.id}>
-              <td>{b.id}</td>
-              <td>{b.title}</td>
-              <td>{b.subTitle}</td>
-              <td>{b.isActive ? "✅" : ""}</td>
-              <td>
-                <button onClick={() => handleActivate(b.id)}>Activate</button>
-                <button onClick={() => handleDelete(b.id)} style={{ marginLeft: "5px" }}>Delete</button>
-              </td>
+      <div className="table-wrapper">
+        <table className="banner-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Title</th><th>Subtitle</th><th>Active</th><th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {banners.map(b => (
+              <tr key={b.id}>
+                <td>{b.id}</td>
+                <td>{b.title}</td>
+                <td>{b.subTitle}</td>
+                <td>{b.isActive ? "✅" : ""}</td>
+                <td>
+                  <button onClick={() => handleActivate(b.id)} className="btn-edit">Activate</button>
+                  <button onClick={() => handleDelete(b.id)} className="btn-delete">Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

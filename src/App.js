@@ -17,6 +17,7 @@ import StaffOrders from "./pages/StaffOrders";
 import StaffProcessClaim from "./pages/StaffProcessClaim";
 import CustomerActivityNotification from './pages/CustomerActivityNotification';
 import MyReviews from "./pages/MyReviews";
+import AdminOrders from "./pages/AdminOrder";
 
 import './App.css';
 
@@ -65,6 +66,8 @@ function App() {
             <Route path="add-product" element={<AddProduct />} />
             <Route path="view-products" element={<ViewProducts />} />
             <Route path="add-banner" element={<AddBanner />} />
+            <Route path="view-orders" element={<AdminOrders />} />
+
           </Route>
 
           {/*STAFF SIDE */}

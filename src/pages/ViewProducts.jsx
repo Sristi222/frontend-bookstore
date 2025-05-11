@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import "./ViewProducts.css";
 
 const ViewProducts = () => {
   const [products, setProducts] = useState([]);
@@ -11,7 +12,6 @@ const ViewProducts = () => {
   const fetchProducts = async () => {
     try {
       const res = await axios.get("https://localhost:7085/api/products");
-      console.log("API response:", res.data);
 
       const productArray = Array.isArray(res.data.data)
         ? res.data.data
@@ -24,7 +24,7 @@ const ViewProducts = () => {
       if (productArray.length === 0) {
         setMessage("No products found.");
       } else {
-        setMessage(""); // clear if products exist
+        setMessage("");
       }
     } catch (err) {
       console.error(err);
@@ -52,62 +52,65 @@ const ViewProducts = () => {
   }, []);
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Admin &gt; View Products</h2>
-
-      {loading ? (
-        <p>Loading products...</p>
-      ) : message ? (
-        <p>{message}</p>
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#333", color: "#fff" }}>
-                <th style={cellStyle}>ID</th>
-                <th style={cellStyle}>Name</th>
-                <th style={cellStyle}>Author</th>
-                <th style={cellStyle}>Genre</th>
-                <th style={cellStyle}>Price</th>
-                <th style={cellStyle}>Stock</th>
-                <th style={cellStyle}>On Sale</th>
-                <th style={cellStyle}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((product) => (
-                <tr key={product.id}>
-                  <td style={cellStyle}>{product.id}</td>
-                  <td style={cellStyle}>{product.name}</td>
-                  <td style={cellStyle}>{product.author}</td>
-                  <td style={cellStyle}>{product.genre}</td>
-                  <td style={cellStyle}>${product.price}</td>
-                  <td style={cellStyle}>{product.stockQuantity}</td>
-                  <td style={cellStyle}>{product.onSale ? "Yes" : "No"}</td>
-                  <td style={cellStyle}>
-                    <button
-                      onClick={() => navigate(`/admin/edit-product/${product.id}`)}
-                      style={{ marginRight: "5px" }}
-                    >
-                      ✏️ Edit
-                    </button>
-                    <button
-                      onClick={() => deleteProduct(product.id)}
-                      style={{ backgroundColor: "red", color: "white" }}
-                    >
-                      🗑️ Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div className="view-products-container">
+      <div className="view-products-card">
+        <div className="view-products-header">
+          <h2>📚 Admin &gt; View Products</h2>
+          <p>Below is the list of all products in your store.</p>
         </div>
-      )}
+
+        {loading ? (
+          <p className="status-msg">Loading products...</p>
+        ) : message ? (
+          <p className="status-msg">{message}</p>
+        ) : (
+          <div className="table-wrapper">
+            <table className="product-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Author</th>
+                  <th>Genre</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>On Sale</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((product) => (
+                  <tr key={product.id}>
+                    <td>{product.id}</td>
+                    <td>{product.name}</td>
+                    <td>{product.author}</td>
+                    <td>{product.genre}</td>
+                    <td>Rs. {product.price}</td>
+                    <td>{product.stockQuantity}</td>
+                    <td>{product.onSale ? "Yes" : "No"}</td>
+                    <td>
+                      <button
+                        className="btn-edit"
+                        onClick={() => navigate(`/admin/edit-product/${product.id}`)}
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        className="btn-delete"
+                        onClick={() => deleteProduct(product.id)}
+                      >
+                        🗑️
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
-
-const cellStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center" };
 
 export default ViewProducts;

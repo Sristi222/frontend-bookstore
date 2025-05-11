@@ -11,7 +11,7 @@ const ProductDetails = () => {
   const [loadingReviews, setLoadingReviews] = useState(true);
 
   const token = localStorage.getItem("token");
-  const API_URL = "https://localhost:7085/api"; // ✅ make sure this is correct
+  const API_URL = "https://localhost:7085/api"; //make sure this is correct
 
   useEffect(() => {
     const fetchProduct = async () => {
